@@ -1,0 +1,10 @@
+---
+title: "Assignment#2B"
+author: "Fraz Aslam"
+format: html
+editor: visual
+---
+
+## Approach 
+
+My main apprach to this assignment will be to properly understand Null Error Rate, Confusion Matrices and thresholds. Loading the data into R from a .csv should not prove to be a problem but being able to apply the proper functions to acheive the task will be my greatest hurdle in this assignment. I will leverage Claude to help me understand the best way to apprach datasets with classification problems and machine learning. Im sure it will prove to be very useful to truly understand what it is im trying to do. 
