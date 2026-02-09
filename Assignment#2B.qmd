@@ -1,10 +1,165 @@
 ---
-title: "Assignment#2B"
+title: "Assignment #2B"
 author: "Fraz Aslam"
 format: html
 editor: visual
 ---
 
-## Approach 
+## Approach
 
-My main apprach to this assignment will be to properly understand Null Error Rate, Confusion Matrices and thresholds. Loading the data into R from a .csv should not prove to be a problem but being able to apply the proper functions to acheive the task will be my greatest hurdle in this assignment. I will leverage Claude to help me understand the best way to apprach datasets with classification problems and machine learning. Im sure it will prove to be very useful to truly understand what it is im trying to do. 
+My main approach to this assignment will be to properly understand Null Error Rate, Confusion Matrices and thresholds. Loading the data into R from a .csv should not prove to be a problem but being able to apply the proper functions to acheive the task will be my greatest hurdle in this assignment. I will leverage Claude to help me understand the best way to apprach datasets with classification problems and machine learning. Im sure it will prove to be very useful to truly understand what it is im trying to do.
+
+```{r}
+library(tidyverse)
+library(gt)
+```
+
+```{r}
+url <- "https://raw.githubusercontent.com/acatlin/data/refs/heads/master/penguin_predictions.csv"
+
+df <- read_csv(
+  file = url,
+  show_col_types = FALSE,
+  progress = FALSE
+)
+
+glimpse(df)
+```
+
+## Null Error Rate
+
+Null Error Rate is crucial to know because its the baseline that a real model must beat. if the model is lower than it is not useful.
+
+```{r}
+table(df$sex)
+```
+
+```{r}
+null_error_rate <- min(table(df$sex)) / nrow(df)
+null_error_rate
+```
+
+```{r}
+ggplot(df, aes(x = factor(sex))) +
+  geom_bar(fill = "steelblue") +
+  labs(
+    title = "Class Distribution of Sex",
+    x = "Sex",
+    y = "Count"
+  )
+```
+
+```{r}
+threshold <- 0.5 
+
+df <- df %>%
+  mutate(pred_05 = ifelse(.pred_female > threshold, "female", "male"))
+
+df
+```
+
+## Building the Confusion Matrix
+
+```{r}
+TP <- sum(df$pred_05 == "female" & df$sex == "female") 
+FP <- sum(df$pred_05 == "female" & df$sex == "male")   
+TN <- sum(df$pred_05 == "male"   & df$sex == "male")   
+FN <- sum(df$pred_05 == "male"   & df$sex == "female")  
+
+
+conf_mat_05 <- matrix(
+  c(TP, FP, FN, TN),
+  nrow = 2,
+  byrow = TRUE,
+  dimnames = list(
+    "Predicted" = c("Female", "Male"),
+    "Actual" = c("Female", "Male")
+  )
+)
+
+conf_mat_05
+```
+
+```{r}
+threshold <- 0.2
+df <- df %>%
+  mutate(pred_02 = ifelse(.pred_female > threshold, "female", "male"))
+
+TP02 <- sum(df$pred_02 == "female" & df$sex == "female")
+FP02 <- sum(df$pred_02 == "female" & df$sex == "male")
+TN02 <- sum(df$pred_02 == "male"   & df$sex == "male")
+FN02 <- sum(df$pred_02 == "male"   & df$sex == "female")
+
+conf_mat_02 <- matrix(
+  c(TP02, FP02, FN02, TN02),
+  nrow = 2,
+  byrow = TRUE,
+  dimnames = list(
+    "Predicted" = c("Female", "Male"),
+    "Actual" = c("Female", "Male")
+  )
+)
+
+conf_mat_02
+
+```
+
+```{r}
+threshold <- 0.8
+df <- df %>%
+  mutate(pred_08 = ifelse(.pred_female > threshold, "female", "male"))
+
+TP08 <- sum(df$pred_08 == "female" & df$sex == "female")
+FP08 <- sum(df$pred_08 == "female" & df$sex == "male")
+TN08 <- sum(df$pred_08 == "male"   & df$sex == "male")
+FN08 <- sum(df$pred_08 == "male"   & df$sex == "female")
+
+conf_mat_08 <- matrix(
+  c(TP08, FP08, FN08, TN08),
+  nrow = 2,
+  byrow = TRUE,
+  dimnames = list(
+    "Predicted" = c("Female", "Male"),
+    "Actual" = c("Female", "Male")
+  )
+)
+
+conf_mat_08
+```
+
+```{r}
+# Metrics for threshold 0.2
+accuracy_02  <- (TP02 + TN02) / (TP02 + FP02 + TN02 + FN02)
+precision_02 <- TP02 / (TP02 + FP02)
+recall_02    <- TP02 / (TP02 + FN02)
+f1_02        <- 2 * precision_02 * recall_02 / (precision_02 + recall_02)
+
+# Metrics for threshold 0.5
+accuracy_05  <- (TP + TN) / (TP + FP + TN + FN)
+precision_05 <- TP / (TP + FP)
+recall_05    <- TP / (TP + FN)
+f1_05        <- 2 * precision_05 * recall_05 / (precision_05 + recall_05)
+
+# Metrics for threshold 0.8
+accuracy_08  <- (TP08 + TN08) / (TP08 + FP08 + TN08 + FN08)
+precision_08 <- TP08 / (TP08 + FP08)
+recall_08    <- TP08 / (TP08 + FN08)
+f1_08        <- 2 * precision_08 * recall_08 / (precision_08 + recall_08)
+
+# Combine into final table
+final_metrics <- tibble(
+  Threshold = c(0.2, 0.5, 0.8),
+  Accuracy  = c(accuracy_02, accuracy_05, accuracy_08),
+  Precision = c(precision_02, precision_05, precision_08),
+  Recall    = c(recall_02, recall_05, recall_08),
+  F1        = c(f1_02, f1_05, f1_08)
+)
+
+final_metrics
+```
+
+# Threshold Use Cases
+
+0.2 Threshold - This is where the threshold is low, you will catch more positives or "false alarms" this is useful when screening for diseases. False positives are better than false negatives or not catching positives
+
+0.8 Threshold - This is where the threshold is high. Similar to medical field we can take the example of surgery. You should only do surgery if the patient needs it or displays a high confidence for it.
